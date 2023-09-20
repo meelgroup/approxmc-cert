@@ -64,6 +64,7 @@ string randfilename;
 double epsilon;
 double delta;
 string logfilename;
+string certfilename;
 uint32_t start_iter = 0;
 uint32_t verb_cls = 0;
 uint32_t simplify;
@@ -115,6 +116,8 @@ void add_appmc_options()
         , "Confidence parameter, i.e. how sure are we of the result? (1-d) = probability the count is within range as per epsilon parameter. So d=0.2 means we are 80%% sure the count is within range as specified by epsilon. The lower, the higher confidence we have in the count.")
     ("log", po::value(&logfilename),
          "Logs of ApproxMC execution")
+    ("cert", po::value(&certfilename),
+         "Certification of ApproxMC execution")
     ("ignore", po::value(&ignore_sampl_set)->default_value(ignore_sampl_set)
         , "Ignore given sampling set and recompute it with Arjun")
     ;
@@ -498,6 +501,11 @@ void set_approxmc_options()
         appmc->set_up_randbits(randfilename);
         cout << "c [appmc] random bits file set " << randfilename << endl;
     }
+
+    if (certfilename != "") {
+        appmc->set_up_cert(certfilename);
+        cout << "c [appmc] Certification file set " << certfilename << endl;
+    } 
 }
 
 template<class T>

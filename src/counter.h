@@ -162,6 +162,7 @@ private:
     );
     void openLogFile();
     void openRandFile();
+    void openCertFile();
     void call_after_parse();
     void ban_one(const uint32_t act_var, const vector<lbool>& model);
     void check_model(
@@ -175,6 +176,7 @@ private:
         , const uint32_t act_var = std::numeric_limits<uint32_t>::max()
         , const uint32_t num_hashes = std::numeric_limits<uint32_t>::max()
     );
+    int print_models(HashesModels hm, int64_t hashCount);
 
     void readInAFile(SATSolver* solver2, const string& filename);
     void readInStandardInput(SATSolver* solver2);
@@ -193,6 +195,7 @@ private:
     double startTime;
     std::ofstream logfile;
     std::ifstream randfile;
+    std::ofstream certfile;
     std::mt19937 randomEngine;
     uint32_t orig_num_vars;
     double total_inter_simp_time = 0;

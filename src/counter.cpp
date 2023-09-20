@@ -257,7 +257,7 @@ SolNum Counter::bounded_sol_count(
         }
     }
 
-    const uint64_t repeat = add_glob_banning_cls(hm, sol_ban_var, hashCount);
+    const uint64_t repeat = (conf.reuse_models ? add_glob_banning_cls(hm, sol_ban_var, hashCount) : 0);
     uint64_t solutions = repeat;
     double last_found_time = cpuTimeTotal();
     vector<vector<lbool>> models;
@@ -307,7 +307,7 @@ SolNum Counter::bounded_sol_count(
     }
 
     //Save global models
-    if (hm && conf.reuse_models) {
+    if (hm && (conf.reuse_models || !conf.certfilename.empty())) {
         for (const auto& model: models) {
             hm->glob_model.push_back(SavedModel(hashCount, model));
         }
@@ -340,12 +340,14 @@ ApproxMC::SolCount Counter::solve(Config _conf)
 
     openLogFile();
     openRandFile();
+    openCertFile();
     randomEngine.seed(conf.seed);
 
     ApproxMC::SolCount solCount = count();
     print_final_count_stats(solCount);
 
     randfile.close();
+    certfile.close();
 
     if (conf.verb) {
         cout << "c [appmc] ApproxMC T: "
@@ -466,6 +468,18 @@ ApproxMC::SolCount Counter::count()
     //https://www.ijcai.org/Proceedings/16/Papers/503.pdf
     for (uint32_t j = 0; j < measurements; j++) {
         one_measurement_count(mPrev, j, sparse_data, &hm);
+
+        // certification
+        if (certfile.is_open()) {
+            certfile << mPrev << endl; 
+            if (mPrev >= 1) {
+                certfile << threshold+1 << endl;
+                assert(print_models(hm, mPrev-1) == threshold+1);
+            }
+            certfile << numCountList.back() << endl; 
+            assert(print_models(hm, mPrev) == numCountList.back());
+        }
+
         if (mPrev == 0) {
             // Exact count, no need to measure multiple times.
             break;
@@ -477,6 +491,41 @@ ApproxMC::SolCount Counter::count()
     assert(numHashList.size() > 0 && "UNSAT should not be possible");
 
     return calc_est_count();
+}
+
+int Counter::print_models(HashesModels hm, int64_t hashCount)
+{
+    // number of solutions
+    int count = 0;
+
+    for (uint32_t i = 0; count < threshold+1 && i < hm.glob_model.size(); i++) {
+        const SavedModel& sm = hm.glob_model[i];
+        bool ok = true;
+        if (conf.reuse_models) {
+            if (sm.hash_num < hashCount) {
+                for (const auto& h: hm.hashes) {
+                    if (h.first < hashCount) {
+                        ok &= check_model_against_hash(h.second, sm.model);
+                        if (!ok) break;
+                    }
+                }
+            }
+        } else {
+            if (sm.hash_num != hashCount) {
+                ok = false;
+            }
+        }
+
+        if (ok) {
+            count++;
+            for (const uint32_t var: conf.sampling_set) {
+                certfile << Lit(var, sm.model[var] == l_False) << ' ';
+            }
+            certfile << '0' << endl;
+        }
+    }
+
+    return count;
 }
 
 ApproxMC::SolCount Counter::calc_est_count()
@@ -805,6 +854,18 @@ void Counter::openRandFile()
         if (!randfile.is_open()) {
             cout << "[appmc] Cannot open Counter random bits file '" << conf.randfilename
                  << "' for reading." << endl;
+            exit(1);
+        }
+    }
+}
+
+void Counter::openCertFile()
+{
+    if (!conf.certfilename.empty()) {
+        certfile.open(conf.certfilename.c_str());
+        if (!certfile.is_open()) {
+            cout << "[appmc] Cannot open Counter certification file '" << conf.certfilename
+                 << "' for writing." << endl;
             exit(1);
         }
     }
