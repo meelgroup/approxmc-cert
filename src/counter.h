@@ -161,6 +161,7 @@ private:
         double used_time
     );
     void openLogFile();
+    void openRandFile();
     void call_after_parse();
     void ban_one(const uint32_t act_var, const vector<lbool>& model);
     void check_model(
@@ -191,11 +192,13 @@ private:
     ////////////////
     double startTime;
     std::ofstream logfile;
+    std::ifstream randfile;
     std::mt19937 randomEngine;
     uint32_t orig_num_vars;
     double total_inter_simp_time = 0;
     uint32_t threshold; //precision, it's computed
     uint32_t cnf_dump_no = 0;
+    uint32_t base_rand = 0;
 
     int argc;
     char** argv;

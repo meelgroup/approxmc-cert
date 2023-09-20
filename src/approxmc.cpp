@@ -109,6 +109,11 @@ DLL_PUBLIC void AppMC::set_up_log(string log_file_name)
     data->conf.logfilename = log_file_name;
 }
 
+DLL_PUBLIC void AppMC::set_up_randbits(string rand_file_name)
+{
+    data->conf.randfilename = rand_file_name;
+}
+
 DLL_PUBLIC void AppMC::set_verbosity(uint32_t verb)
 {
     data->conf.verb = verb;

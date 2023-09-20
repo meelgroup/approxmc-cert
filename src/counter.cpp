@@ -60,12 +60,30 @@
 using std::cout;
 using std::endl;
 using std::map;
+using std::ios;
 using namespace AppMCInt;
 
 Hash Counter::add_hash(uint32_t hash_index, SparseData& sparse_data)
 {
-    const string randomBits =
-        gen_rnd_bits(conf.sampling_set.size(), hash_index, sparse_data);
+    string randomBits;
+
+    if (randfile.is_open()) {
+        // set read position of random bits
+        uint32_t pos_rand = base_rand + hash_index*(conf.sampling_set.size()+1);
+        randfile.seekg(pos_rand, ios::beg);
+     
+        // read random bits
+        randomBits.resize(conf.sampling_set.size()+1);
+        randfile.read(&randomBits[0], conf.sampling_set.size()+1);
+        if (randfile.gcount() != conf.sampling_set.size()+1) {
+            cout << "[appmc] Cannot read " << conf.sampling_set.size()+1 << " random bits from file '" << conf.randfilename
+                 << "'." << endl;
+            exit(1);
+        }
+        // cout << "cccccccc " << "position: " << pos_rand << " random bits: " << randomBits << endl;
+    } else {
+        randomBits = gen_rnd_bits(conf.sampling_set.size(), hash_index, sparse_data);
+    }
 
     vector<uint32_t> vars;
     for (uint32_t j = 0; j < conf.sampling_set.size(); j++) {
@@ -76,7 +94,12 @@ Hash Counter::add_hash(uint32_t hash_index, SparseData& sparse_data)
 
     solver->new_var();
     const uint32_t act_var = solver->nVars()-1;
-    const bool rhs = gen_rhs();
+    bool rhs;
+    if (randfile.is_open()) {
+        rhs = randomBits.back() == '1';
+    } else {
+        rhs = gen_rhs();
+    }
     Hash h(act_var, vars, rhs);
 
     vars.push_back(act_var);
@@ -316,10 +339,13 @@ ApproxMC::SolCount Counter::solve(Config _conf)
     startTime = cpuTimeTotal();
 
     openLogFile();
+    openRandFile();
     randomEngine.seed(conf.seed);
 
     ApproxMC::SolCount solCount = count();
     print_final_count_stats(solCount);
+
+    randfile.close();
 
     if (conf.verb) {
         cout << "c [appmc] ApproxMC T: "
@@ -529,6 +555,8 @@ void Counter::one_measurement_count(
 
     int64_t hashCount = mPrev;
     int64_t hashPrev = hashCount;
+
+    base_rand = iter * conf.sampling_set.size() * (conf.sampling_set.size()+1);
 
     //We are doing a galloping search here (see our IJCAI-16 paper for more details).
     //lowerFib is referred to as loIndex and upperFib is referred to as hiIndex
@@ -767,6 +795,18 @@ void Counter::openLogFile()
         << " " << std::setw(7) << "total T"
         << endl;
 
+    }
+}
+
+void Counter::openRandFile()
+{
+    if (!conf.randfilename.empty()) {
+        randfile.open(conf.randfilename.c_str());
+        if (!randfile.is_open()) {
+            cout << "[appmc] Cannot open Counter random bits file '" << conf.randfilename
+                 << "' for reading." << endl;
+            exit(1);
+        }
     }
 }
 

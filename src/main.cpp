@@ -60,6 +60,7 @@ po::variables_map vm;
 po::positional_options_description p;
 uint32_t verbosity = 1;
 uint32_t seed;
+string randfilename;
 double epsilon;
 double delta;
 string logfilename;
@@ -105,6 +106,7 @@ void add_appmc_options()
     ("input", po::value< vector<string> >(), "file(s) to read")
     ("verb,v", po::value(&verbosity)->default_value(1), "verbosity")
     ("seed,s", po::value(&seed)->default_value(seed), "Seed")
+    ("randbits", po::value(&randfilename), "file to read random bits")
     ("version", "Print version info")
 
     ("epsilon,e", po::value(&epsilon)->default_value(epsilon, my_epsilon.str())
@@ -490,6 +492,11 @@ void set_approxmc_options()
     if (logfilename != "") {
         appmc->set_up_log(logfilename);
         cout << "c [appmc] Logfile set " << logfilename << endl;
+    }
+
+    if (randfilename != "") {
+        appmc->set_up_randbits(randfilename);
+        cout << "c [appmc] random bits file set " << randfilename << endl;
     }
 }
 
