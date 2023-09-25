@@ -471,6 +471,13 @@ ApproxMC::SolCount Counter::count()
 
         // certification
         if (certfile.is_open()) {
+            // initialization
+            if(j == 0 && mPrev >= 1) {
+                certfile << 0 << endl;
+                certfile << threshold+1 << endl;
+                assert(print_models(hm, 0) == threshold+1);
+            }
+            
             certfile << mPrev << endl; 
             if (mPrev >= 1) {
                 certfile << threshold+1 << endl;
