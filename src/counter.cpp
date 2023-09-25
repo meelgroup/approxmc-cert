@@ -525,7 +525,8 @@ int Counter::print_models(HashesModels hm, int64_t hashCount)
 
         if (ok) {
             count++;
-            for (const uint32_t var: conf.sampling_set) {
+            // may not print the full model if Arjun simplifies the formula
+            for (uint32_t var = 0; var < orig_num_vars; var++) {
                 certfile << Lit(var, sm.model[var] == l_False) << ' ';
             }
             certfile << '0' << endl;
