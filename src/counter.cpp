@@ -483,8 +483,10 @@ ApproxMC::SolCount Counter::count()
                 certfile << threshold+1 << endl;
                 assert(print_models(hm, mPrev-1) == threshold+1);
             }
-            certfile << numCountList.back() << endl; 
-            assert(print_models(hm, mPrev) == numCountList.back());
+            if (mPrev < conf.sampling_set.size()) {
+                certfile << numCountList.back() << endl; 
+                assert(print_models(hm, mPrev) == numCountList.back());
+            }
         }
 
         if (mPrev == 0) {
