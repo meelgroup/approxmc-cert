@@ -621,7 +621,7 @@ void Counter::one_measurement_count(
     int64_t hashCount = mPrev;
     int64_t hashPrev = hashCount;
 
-    base_rand = iter * conf.sampling_set.size() * (conf.sampling_set.size()+1);
+    base_rand = iter * (conf.sampling_set.size()-1) * (conf.sampling_set.size()+1);
 
     //We are doing a galloping search here (see our IJCAI-16 paper for more details).
     //lowerFib is referred to as loIndex and upperFib is referred to as hiIndex
