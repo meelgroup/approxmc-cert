@@ -262,7 +262,7 @@ SolNum Counter::bounded_sol_count(
     double last_found_time = cpuTimeTotal();
     vector<vector<lbool>> models;
     while (solutions < maxSolutions) {
-        lbool ret = solver->solve(&new_assumps, true);
+        lbool ret = solver->solve(&new_assumps, conf.certfilename.empty());
         assert(ret == l_False || ret == l_True);
         if (conf.dump_intermediary_cnf >= 2 && ret == l_True) {
             dump_cnf_from_solver(new_assumps);
