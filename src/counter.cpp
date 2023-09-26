@@ -467,6 +467,10 @@ ApproxMC::SolCount Counter::count()
     //for Probabilistic Inference: From Linear to Logarithmic SAT Calls"
     //https://www.ijcai.org/Proceedings/16/Papers/503.pdf
     for (uint32_t j = 0; j < measurements; j++) {
+        if (mPrev && mPrev == conf.sampling_set.size()) {
+            mPrev--;
+        }
+
         one_measurement_count(mPrev, j, sparse_data, &hm);
 
         // certification
