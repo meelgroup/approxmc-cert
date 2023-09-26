@@ -70,17 +70,22 @@ Hash Counter::add_hash(uint32_t hash_index, SparseData& sparse_data)
     if (randfile.is_open()) {
         // set read position of random bits
         uint32_t pos_rand = base_rand + hash_index*(conf.sampling_set.size()+1);
-        randfile.seekg(pos_rand, ios::beg);
+        randfile.seekg(pos_rand/8, ios::beg);
      
         // read random bits
-        randomBits.resize(conf.sampling_set.size()+1);
-        randfile.read(&randomBits[0], conf.sampling_set.size()+1);
-        if (randfile.gcount() != conf.sampling_set.size()+1) {
+        char ch;
+        int cnt = 0;
+        while (cnt < conf.sampling_set.size()+1 && randfile.get(ch)) {
+            for (int i = (cnt ? 7 : 7-pos_rand%8); cnt < conf.sampling_set.size()+1 && i >= 0; i--) {
+                randomBits += '0' + ((ch >> i) & 1);
+                cnt++;
+            }
+        }
+        if (randomBits.size() != conf.sampling_set.size()+1) {
             cout << "[appmc] Cannot read " << conf.sampling_set.size()+1 << " random bits from file '" << conf.randfilename
                  << "'." << endl;
             exit(1);
         }
-        // cout << "cccccccc " << "position: " << pos_rand << " random bits: " << randomBits << endl;
     } else {
         randomBits = gen_rnd_bits(conf.sampling_set.size(), hash_index, sparse_data);
     }
@@ -884,7 +889,7 @@ void Counter::openLogFile()
 void Counter::openRandFile()
 {
     if (!conf.randfilename.empty()) {
-        randfile.open(conf.randfilename.c_str());
+        randfile.open(conf.randfilename.c_str(), ios::binary | ios::in);
         if (!randfile.is_open()) {
             cout << "[appmc] Cannot open Counter random bits file '" << conf.randfilename
                  << "' for reading." << endl;
