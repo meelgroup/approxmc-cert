@@ -221,7 +221,7 @@ DLL_PUBLIC bool AppMC::get_reuse_models()
 
 DLL_PUBLIC bool AppMC::find_one_solution()
 {
-    return data->counter.find_one_solution();
+    return data->counter.find_one_solution(data->conf);
 }
 
 DLL_PUBLIC ApproxMC::SolCount AppMC::count()

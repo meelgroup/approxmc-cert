@@ -442,9 +442,27 @@ void Counter::set_up_probs_threshold_measurements(
     }
 }
 
-bool Counter::find_one_solution()
+bool Counter::find_one_solution(Config _conf)
 {
     auto ret = solver->solve();
+
+    // certification
+    conf = _conf;
+    orig_num_vars = solver->nVars();
+    openCertFile();
+    certfile << '0' << endl;
+    if (ret == l_True) {
+        certfile << '1' << endl;
+        const vector<lbool> model = solver->get_model();
+        for (uint32_t var = 0; var < orig_num_vars; var++) {
+            certfile << Lit(var, model[var] == l_False) << ' ';
+        }
+        certfile << '0' << endl;
+    } else {
+        certfile << '0' << endl;
+    }
+    certfile.close();
+
     return ret == l_True;
 }
 
