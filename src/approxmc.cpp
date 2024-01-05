@@ -28,7 +28,7 @@
 
 #include "approxmc.h"
 #include "counter.h"
-#include "constants.h"
+#include "appmc_constants.h"
 #include "config.h"
 #include <iostream>
 
@@ -59,7 +59,6 @@ DLL_PUBLIC AppMC::AppMC()
     data->counter.solver = new SATSolver();
     data->counter.solver->set_up_for_scalmc();
     data->counter.solver->set_allow_otf_gauss();
-    data->counter.solver->set_xor_detach(data->conf.cms_detach_xor);
 }
 
 DLL_PUBLIC AppMC::~AppMC()
@@ -143,6 +142,11 @@ DLL_PUBLIC void AppMC::set_delta(double delta)
     data->conf.delta = delta;
 }
 
+DLL_PUBLIC void AppMC::set_debug(int debug) { data->conf.debug = debug; }
+DLL_PUBLIC void AppMC::set_force_sol_extension(int val) {
+    data->conf.force_sol_extension = val;
+}
+
 DLL_PUBLIC void AppMC::set_start_iter(uint32_t start_iter)
 {
     data->conf.start_iter = start_iter;
@@ -167,12 +171,6 @@ DLL_PUBLIC void AppMC::set_simplify(uint32_t simplify)
 DLL_PUBLIC void AppMC::set_var_elim_ratio(double var_elim_ratio)
 {
     data->conf.var_elim_ratio = var_elim_ratio;
-}
-
-DLL_PUBLIC void AppMC::set_detach_xors(uint32_t detach_xors)
-{
-    data->conf.cms_detach_xor = detach_xors;
-    data->counter.solver->set_xor_detach(data->conf.cms_detach_xor);
 }
 
 DLL_PUBLIC void AppMC::set_reuse_models(uint32_t reuse_models)
@@ -300,16 +298,10 @@ DLL_PUBLIC bool AppMC::add_bnn_clause(
     return data->counter.solver->add_bnn_clause(lits, cutoff, out);
 }
 
-DLL_PUBLIC void AppMC::set_detach_warning()
-{
-    data->counter.solver->set_verbosity_detach_warning(true);
-}
-
 DLL_PUBLIC CMSat::SATSolver* AppMC::get_solver()
 {
     return data->counter.solver;
 }
-
 
 DLL_PUBLIC const std::vector<uint32_t>& AppMC::get_sampling_set() const
 {

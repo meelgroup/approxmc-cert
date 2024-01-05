@@ -386,14 +386,12 @@ void Counter::simplify()
     solver->set_intree_probe(1);
     solver->set_full_bve_iter_ratio(conf.var_elim_ratio);
     solver->set_full_bve(1);
-    solver->set_bva(1);
     solver->set_scc(1);
 
     solver->simplify();
 
     solver->set_sls(0);
     solver->set_full_bve(0);
-    solver->set_bva(0);
 }
 
 //Set up probabilities, threshold and measurements
@@ -937,6 +935,28 @@ void Counter::check_model(
 )
 {
     for(uint32_t var: conf.sampling_set) assert(model[var] != l_Undef);
+    if (conf.debug) {
+        assert(conf.force_sol_extension);
+        assert(conf.dump_intermediary_cnf);
+        for(const auto& cl: cls_in_solver) {
+            bool sat = false;
+            for(const auto& l: cl) {
+                assert(model[l.var()] != l_Undef);
+                if ((model[l.var()] == l_True && !l.sign()) ||
+                    (model[l.var()] == l_False && l.sign())) {sat = true; break;}
+            }
+            assert(sat);
+        }
+        for(const auto& x: xors_in_solver) {
+            bool sat = !x.second;
+            for(const auto& v: x.first) {
+                assert(model[v] != l_Undef);
+                sat ^= (model[v] == l_True);
+            }
+            assert(sat);
+        }
+    }
+
     if (!hm) return;
 
     for(const auto& h: hm->hashes) {

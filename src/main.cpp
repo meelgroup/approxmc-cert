@@ -69,7 +69,6 @@ uint32_t start_iter = 0;
 uint32_t verb_cls = 0;
 uint32_t simplify;
 double var_elim_ratio;
-uint32_t detach_xors = 1;
 uint32_t reuse_models = 1;
 uint32_t force_sol_extension = 0;
 uint32_t sparse = 0;
@@ -82,7 +81,12 @@ bool sampling_vars_found = false;
 int ignore_sampl_set = 0;
 int do_arjun = 1;
 int debug_arjun = 0;
+int debug = 0;
 int with_e = 1;
+int e_iter_1 = 2;
+int e_iter_2 = 2;
+int e_vivif_sparsify = 0;
+int e_get_reds = 0;
 
 void add_appmc_options()
 {
@@ -120,6 +124,7 @@ void add_appmc_options()
          "Certification of ApproxMC execution")
     ("ignore", po::value(&ignore_sampl_set)->default_value(ignore_sampl_set)
         , "Ignore given sampling set and recompute it with Arjun")
+    ("debug", po::value(&debug)->default_value(debug), "Turn on more heavy internal debugging")
     ;
 
     ArjunNS::Arjun tmpa;
@@ -133,16 +138,21 @@ void add_appmc_options()
     improvement_options.add_options()
     ("sparse", po::value(&sparse)->default_value(sparse)
         , "0 = (default) Do not use sparse method. 1 = Generate sparse XORs when possible.")
-    ("detachxor", po::value(&detach_xors)->default_value(detach_xors)
-        , "Detach XORs in CMS")
     ("reusemodels", po::value(&reuse_models)->default_value(reuse_models)
         , "Reuse models while counting solutions")
     ("forcesolextension", po::value(&force_sol_extension)->default_value(force_sol_extension)
         , "Use trick of not extending solutions in the SAT solver to full solution")
     ("withe", po::value(&with_e)->default_value(with_e)
         , "Eliminate variables and simplify CNF as well")
+    ("eiter1", po::value(&e_iter_1)->default_value(e_iter_1)
+        , "Num iters of E on 1st round")
+    ("eiter2", po::value(&e_iter_2)->default_value(e_iter_2)
+        , "Num iters of E on 1st round")
+    ("evivifsparsify", po::value(&e_vivif_sparsify)->default_value(e_vivif_sparsify)
+        , "E vivif+sparsify")
+    ("egetreds", po::value(&e_get_reds)->default_value(e_get_reds)
+        , "Get redundant from E")
     ;
-
 
     misc_options.add_options()
     ("verbcls", po::value(&verb_cls)->default_value(verb_cls)
@@ -464,15 +474,11 @@ void set_approxmc_options()
 {
     //Main options
     appmc->set_verbosity(verbosity);
-    if (verbosity >= 2) {
-        appmc->set_detach_warning();
-    }
     appmc->set_seed(seed);
     appmc->set_epsilon(epsilon);
     appmc->set_delta(delta);
 
     //Improvement options
-    appmc->set_detach_xors(detach_xors);
     appmc->set_reuse_models(reuse_models);
     appmc->set_sparse(sparse);
 
@@ -482,6 +488,12 @@ void set_approxmc_options()
     appmc->set_simplify(simplify);
     appmc->set_var_elim_ratio(var_elim_ratio);
     appmc->set_dump_intermediary_cnf(dump_intermediary_cnf);
+    appmc->set_force_sol_extension(force_sol_extension);
+    if (debug) {
+        appmc->set_force_sol_extension(1);
+        appmc->set_debug(1);
+        appmc->set_dump_intermediary_cnf(std::max(dump_intermediary_cnf, 1));
+    }
 
     if (logfilename != "") {
         appmc->set_up_log(logfilename);
@@ -576,9 +588,16 @@ int main(int argc, char** argv)
         print_final_indep_set(
             sampling_vars , orig_sampling_set_size, empty_occ_sampl_vars);
         if (with_e) {
-            const auto ret = arjun->get_fully_simplified_renumbered_cnf(sampling_vars, false, true);
+            ArjunNS::SimpConf sc;
+            sc.oracle_vivify = e_vivif_sparsify;
+            sc.oracle_vivify_get_learnts = true;
+            sc.oracle_sparsify = e_vivif_sparsify;
+            sc.iter1 = e_iter_1;
+            sc.iter2 = e_iter_2;
+            const auto ret = arjun->get_fully_simplified_renumbered_cnf(sampling_vars, sc, true, false);
             appmc->new_vars(ret.nvars);
             for(const auto& cl: ret.cnf) appmc->add_clause(cl);
+            if (e_get_reds) for(const auto& cl: ret.red_cnf) appmc->add_red_clause(cl);
             sampling_vars = ret.sampling_vars;
             offset_count_by_2_pow = ret.empty_occs;
         } else {
