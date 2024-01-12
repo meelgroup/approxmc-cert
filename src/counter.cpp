@@ -206,7 +206,7 @@ void Counter::dump_cnf_from_solver(const vector<Lit>& assumps, const uint32_t it
     for(const auto& cl: cls_in_solver) f << cl << " 0" << endl;
     f << "c XORs below" << endl;
     for(const auto& x: xors_in_solver) {
-        f << "x";
+        f << "x ";
         for(uint32_t i = 0; i < x.first.size(); i++) {
             if (i == 0 && !x.second) f << "-";
             f << (x.first[i]+1) << " ";
@@ -560,9 +560,7 @@ int Counter::print_models(HashesModels hm, int64_t hashCount)
 ApproxMC::SolCount Counter::calc_est_count()
 {
     ApproxMC::SolCount ret_count;
-    if (numHashList.empty() || numCountList.empty()) {
-        return ret_count;
-    }
+    if (numHashList.empty() || numCountList.empty()) return ret_count;
 
     const auto minHash = findMin(numHashList);
     auto cnt_it = numCountList.begin();
@@ -570,6 +568,11 @@ ApproxMC::SolCount Counter::calc_est_count()
         ; hash_it != numHashList.end() && cnt_it != numCountList.end()
         ; hash_it++, cnt_it++
     ) {
+        if ((*hash_it) - minHash > 10) {
+            cout << "Internal ERROR: Something is VERY fishy, the difference between each count must"
+                " never be this large. Please report this bug to the maintainers" << endl;
+            exit(-1);
+        }
         *cnt_it *= pow(2, (*hash_it) - minHash);
     }
     ret_count.valid = true;
