@@ -1,51 +1,18 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![build](https://github.com/meelgroup/approxmc/workflows/build/badge.svg)
-[![Docker Hub](https://img.shields.io/badge/docker-latest-blue.svg)](https://hub.docker.com/r/msoos/approxmc/)
 
 
-# ApproxMC4: Approximate Model Counter
-ApproxMCv4 is a state-of-the-art approximate model counter utilizing an improved version of CryptoMiniSat to give approximate model counts to problems of size and complexity that were not possible before.
+# ApproxMCCert: Formally Certified Approximate Model Counter
+ApproxMCCert is a formally certified approximate model counter utilizing formal proof and a certification pipeline to give certified approximate model counts.
 
-This work is by Mate Soos, Stephan Gocht, and Kuldeep S. Meel, as [published in AAAI-19](https://www.comp.nus.edu.sg/~meel/Papers/aaai19-sm.pdf) and [in CAV2020](https://www.comp.nus.edu.sg/~meel/Papers/cav20-sgm.pdf). A large part of the work is in CryptoMiniSat [here](https://github.com/msoos/cryptominisat).
+This work is by Yong Kiam Tan, Jiong Yang, Mate Soos, Magnus O. Myreen, and Kuldeep S. Meel, to appear in CAV24.
 
-ApproxMC handles CNF formulas and performs approximate counting. 
+This repository includes the source code of ApproxMCCert, an approximate model counter with certificate generation, and CertCheck, the corresponding certificate checker.
+The formal proof of the ApproxMC algorithm in [Isabelle](https://isabelle.in.tum.de/) is available on [Archive of Formal Proofs](https://isa-afp.org/entries/Approximate_Model_Counting.html).
+CertCheck needs access to an external CNF-XOR UNSAT checker, where a CNF-XOR solver [CryptoMiniSat](https://github.com/msoos/cryptominisat) outputs the UNSAT proof that is translated and verified by [FRAT-xor and cake_xlrup](https://github.com/meelgroup/frat-xor).
 
-1. If you are interested in exact model counting, visit our exact counter [Ganak](http://github.com/meelgroup/ganak)
-2. If you are instead interested in DNF formulas, visit our DNF counter [DNFApproxMC](https://gitlab.com/Shrotri/DNF_Counting).
+If you are only interested in scalable approximate model counting, visit our state-of-the-art counter [ApproxMC](http://github.com/meelgroup/approxmc).
 
-## How to use the Python interface
-
-Install using pip:
-
-```
-pip install pyapproxmc
-```
-
-Then you can use it as:
-
-```
-import pyapproxmc
-c = pyapproxmc.Counter()
-c.add_clause([1,2,3])
-c.add_clause([3,20])
-count = c.count()
-print("Approximate count is: %d*2**%d" % (count[0], count[1]))
-```
-
-The above will print that `Approximate count is: 11*2**16`. Since the largest variable in the clauses was 20, the system contained 2\*\*20 (i.e. 1048576) potential models. However, some of these models were prohibited by the two clauses, and so only approximately 11*2\*\*16 (i.e. 720896) models remained.
-
-If you want to count over a projection set, you need to call `count(projection_set)`, for example:
-
-```
-import pyapproxmc
-c = pyapproxmc.Counter()
-c.add_clause([1,2,3])
-c.add_clause([3,20])
-count = c.count(range(1,10))
-print("Approximate count is: %d*2**%d" % (count[0], count[1]))
-```
-
-This now prints `Approximate count is: 7*2**6`, which corresponds to the approximate count of models, projected over variables 1..10.
 
 ## How to Build a Binary
 To build on Linux, you will need the following:
@@ -125,61 +92,11 @@ ApproxMC reports that we have approximately `96 (=48*2)` solutions to the CNF's 
 ### Guarantees
 ApproxMC provides so-called "PAC", or Probably Approximately Correct, guarantees. In less fancy words, the system guarantees that the solution found is within a certain tolerance (called "epsilon") with a certain probability (called "delta"). The default tolerance and probability, i.e. epsilon and delta values, are set to 0.8 and 0.2, respectively. Both values are configurable.
 
-### Library usage
-
-The system can be used as a library:
-
-```
-#include <approxmc/approxmc.h>
-#include <vector>
-#include <complex>
-#include <cassert>
-
-using std::vector;
-using namespace ApproxMC;
-using namespace CMSat;
-
-int main() {
-    AppMC appmc;
-    appmc.new_vars(10);
-
-    vector<Lit> clause;
-
-    //add "-3 4 0"
-    clause.clear();
-    clause.push_back(Lit(2, true));
-    clause.push_back(Lit(3, false));
-    appmc.add_clause(clause);
-
-    //add "3 -4 0"
-    clause.clear();
-    clause.push_back(Lit(2, false));
-    clause.push_back(Lit(3, true));
-    appmc.add_clause(clause);
-
-    SolCount c = appmc.count();
-    uint32_t cnt = std::pow(2, c.hashCount)*c.cellSolCount;
-    assert(cnt == std::pow(2, 9));
-
-    return 0;
-}
-```
-
-### ApproxMC5: Sparse-XOR based Approximate Model Counter
-Note: this is beta version release, not recommended for general use. We are currently working on a tight integration of sparse XORs into ApproxMC based on our [LICS-20](http://comp.nus.edu.sg/~meel/Papers/lics20-ma.pdf) paper. You can turn on the sparse XORs using the flag "sparse" but beware as reported in LICS-20 paper, this may slow down in some cases; it is likely to give a significant speedup if the number of solutions is very large. 
-
-
-### Issues, questions, bugs, etc.
-Please click on "issues" at the top and [create a new issue](https://github.com/meelgroup/mis/issues/new). All issues are responded to promptly.
 
 ## How to Cite
-If you use ApproxMC, please cite the following papers: [CAV20](https://dblp.uni-trier.de/rec/conf/cav/SoosGM20.html?view=bibtex), [AAAI19](https://www.comp.nus.edu.sg/~meel/bib/SM19.bib) and [IJCAI16](https://www.comp.nus.edu.sg/~meel/bib/CMV16.bib).
+If you use ApproxMCCert, please cite our CAV24 paper.
 
-If you use sparse XORs, please also cite the [LICS20](https://www.comp.nus.edu.sg/~meel/bib/MA20.bib) paper. 
-
-ApproxMC builds on a series of papers on hashing-based approach: [Related Publications](https://www.comp.nus.edu.sg/~meel/publications.html)
+If you use ApproxMC, please find the details [here](https://github.com/meelgroup/approxmc?tab=readme-ov-file#how-to-cite).
 
 The benchmarks used in our evaluation can be found [here](https://zenodo.org/records/10449477).
 
-## Old Versions
-The old version, 2.0 is available under the branch "ver2". Please check out the releases for the 2.x versions under GitHub [releases](https://github.com/meelgroup/approxmc/releases). Please read the README of the old release to know how to compile the code. Old releases should easily compile.
