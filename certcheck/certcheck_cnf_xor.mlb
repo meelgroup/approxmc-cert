@@ -1,0 +1,9 @@
+$(SML_LIB)/basis/basis.mlb
+$(SML_LIB)/basis/mlton.mlb
+
+Random.sig
+Random.sml
+helper.sml
+certcheck_cnf_xor.ML
+parse_cnf_xor.sml
+certcheck_cnf_xor_main.sml
