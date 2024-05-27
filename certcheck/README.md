@@ -1,18 +1,20 @@
-# CertCheck
+# CertCheck (CNF-XOR)
 
-This folder contains the sources for CertCheck.
+This folder contains the sources for CertCheck specialized for CNF-XOR approximate model counting.
 
-The main file `certcheck_cnf_xor.ML` was exported from `Isabelle2024`.
+The main file `certcheck_cnf_xor.ML` was exported from `Isabelle2024` from the corresponding AFP entry.
 
 # Build Instructions
 
-To build `certcheck_cnf_xor`, ensure that you have a working copy of the [MLton compiler](http://mlton.org/), then run `make`.
+To build `certcheck_cnf_xor`, ensure that you have a working copy of the [MLton compiler](http://mlton.org/), then run `make` in this directory.
 
-The tool requires access to a CNF-XOR unsatisfiability checking pipeline. A default pipeline script `check_unsat_cms.sh` is provided which assumes access to `cryptominisat`, `frat-xor`, and `cake_xlrup` placed in the `cert_tools` subfolder. These tools can be built and copied from the [CryptoMiniSat repository](https://github.com/msoos/cryptominisat) and the [frat-xor repository](https://github.com/meelgroup/frat-xor), respectively.
+## Additional Dependencies
+
+The tool requires access to a (verified) CNF-XOR unsatisfiability checking pipeline. A default pipeline script `check_unsat_cms.sh` is provided which assumes access to `cryptominisat`, `frat-xor`, and `cake_xlrup` placed in the `cert_tools` subfolder. These tools can be built and copied from the [CryptoMiniSat repository](https://github.com/msoos/cryptominisat) and the [frat-xor repository](https://github.com/meelgroup/frat-xor), respectively.
 
 # Usage Instructions
 
-The `gen_rand` tool can be used to generate enough random bits for a given input formula, e.g.:
+First, the `gen_rand` tool can be used to generate enough random bits for a given input formula, e.g.:
 
 ```
 gen_rand 8//10 2//10 ../example.cnf example.rand
@@ -24,19 +26,19 @@ c iters: 9
 c Generating random bits: 891
 ```
 
-Next, use `approxmc` with certification enabled to generate a certificate file:
+Next, use `approxmc` (from this forked repository) with certification enabled to generate a certificate file:
 
 ```
 approxmc --arjun 0 --randbits example.rand --cert example.cert ../example.cnf
 ```
 
-Finally, run `certcheck`
+Finally, run `certcheck_cnf_xor` on the certificate with access to the unsatisfiability checker.
 
 ```
 certcheck_cnf_xor 8//10 2//10 ../example.cnf example.rand example.cert check_unsat_cms.sh
 ```
 
-This should give output similar to the following:
+This should produce output similar to the following:
 
 ```
 c using eps: 4/5
@@ -59,7 +61,8 @@ s mc 184
 
 # Partial Certificate Format
 
-The format expected by `certcheck_cnf_xor` is as follows:
+The partial certificate format expected by `certcheck_cnf_xor` is as follows.
+Note that we call it a "partial" certificate because the unsatisfiability proofs are not included, but are rather checked by an external (verified) pipeline.
 
 ## First round
 
