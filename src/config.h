@@ -26,12 +26,12 @@
  THE SOFTWARE.
  */
 
-#ifndef APPMC_CONFIG_H__
-#define APPMC_CONFIG_H__
+#pragma once
 
 #include <vector>
 #include <cstdint>
 #include <string>
+#include <gmpxx.h>
 
 namespace AppMCInt {
 
@@ -46,7 +46,6 @@ struct Config {
     int simplify = 1;
     double var_elim_ratio = 1.6;
     int reuse_models = 1;
-    std::vector<uint32_t> sampling_set;
     std::string logfilename = "";
     std::string randfilename = "";
     std::string certfilename = "";
@@ -54,8 +53,10 @@ struct Config {
     int dump_intermediary_cnf = 0;
     int debug = 0;
     int force_sol_extension = false;
+
+    std::vector<uint32_t> sampl_vars;
+    bool sampl_vars_set = false;
+    mpz_class multiplier_weight = 1;
 };
 
 }
-
-#endif //APPMCCONFIG

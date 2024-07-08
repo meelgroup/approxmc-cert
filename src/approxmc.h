@@ -67,9 +67,18 @@ class AppMC
 public:
     AppMC();
     ~AppMC();
-    void set_projection_set(const std::vector<uint32_t>& vars);
     ApproxMC::SolCount count();
     bool find_one_solution();
+
+    // Sampling set
+    void set_sampl_vars(const std::vector<uint32_t>& vars);
+    void set_opt_sampl_vars(const std::vector<uint32_t>& vars);
+    bool get_sampl_vars_set() const;
+    const std::vector<uint32_t>& get_sampl_vars() const;
+    void set_multiplier_weight(const mpz_class& weight);
+    const mpz_class& get_multiplier_weight() const;
+    void set_weighted(const bool weighted);
+    void set_lit_weight(const CMSat::Lit& lit, const double weight);
 
     // Adding constraints
     void new_var();
@@ -79,10 +88,6 @@ public:
     bool add_red_clause(const std::vector<CMSat::Lit>& lits);
     bool add_xor_clause(const std::vector<CMSat::Lit>& lits, bool rhs);
     bool add_xor_clause(const std::vector<uint32_t>& vars, bool rhs);
-    bool add_bnn_clause(
-        const std::vector<CMSat::Lit>& lits,
-        signed cutoff,
-        CMSat::Lit out = CMSat::lit_Undef);
 
     // Information about approxmc
     std::string get_version_info();
