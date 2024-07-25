@@ -3,7 +3,8 @@ set -e
 
 # Install dependencies
 apt install -y cmake cargo git zlib1g-dev libboost-program-options-dev \
-    libboost-serialization-dev libmpfr-dev libgmp3-dev wget
+    libboost-serialization-dev libmpfr-dev libgmp3-dev wget \
+    python3 python-is-python3 pip
 
 python -m pip install lit
 
