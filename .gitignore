@@ -1,0 +1,5 @@
+build/
+.kdev4/
+python/cryptominisat
+python/arjun
+*.kdev4
