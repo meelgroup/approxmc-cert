@@ -8,3 +8,19 @@ The formal proof of the ApproxMC algorithm in [Isabelle](https://isabelle.in.tum
 CertCheck needs access to an external CNF-XOR UNSAT checker, where a CNF-XOR solver [CryptoMiniSat](https://github.com/msoos/cryptominisat) outputs the UNSAT proof that is translated and verified by [FRAT-xor and cake_xlrup](https://github.com/meelgroup/frat-xor).
 
 If you are only interested in scalable approximate model counting, visit our state-of-the-art counter [ApproxMC](http://github.com/meelgroup/approxmc).
+
+## Build
+Run the following script to install all dependencies.
+```bash
+./install.sh
+```
+
+## Usage
+The following script runs ApproxMCCert and outputs a certified approximate count or raises an error.
+```bash
+./run.sh cnf_file
+```
+You can find an example below.
+```bash
+./run.sh ./example.cnf
+```
