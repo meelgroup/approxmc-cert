@@ -109,6 +109,13 @@ public:
     bool solver_add_clause(const vector<Lit>& cl);
     bool solver_add_xor_clause(const vector<uint32_t>& vars, const bool rhs);
     bool solver_add_xor_clause(const vector<Lit>& lits, const bool rhs);
+    #ifdef ENABLE_BNN 
+    bool solver_add_bnn_clause(
+        const std::vector<Lit>& lits,
+        signed cutoff,
+        Lit out = lit_Undef
+    );
+    #endif
 
 private:
     Config& conf;
@@ -193,6 +200,7 @@ private:
     uint32_t base_rand = 0;
     vector<vector<Lit>> cls_in_solver; // needed for accurate dumping
     vector<pair<vector<Lit>, bool>> xors_in_solver; // needed for accurate dumping
+    vector<pair<vector<Lit>, pair<int32_t, Lit>>> bnns_in_solver; // needed for accurate dumping
 
     int argc;
     char** argv;

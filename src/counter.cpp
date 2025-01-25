@@ -80,6 +80,17 @@ bool Counter::solver_add_xor_clause(const vector<uint32_t>& vars, const bool rhs
     return solver->add_xor_clause(vars, rhs);
 }
 
+#ifdef ENABLE_BNN 
+bool Counter::solver_add_bnn_clause(
+        const std::vector<Lit>& lits,
+        signed cutoff,
+        Lit out )
+{
+    if (conf.dump_intermediary_cnf) bnns_in_solver.push_back(make_pair(lits, make_pair(cutoff, out)));
+    return solver->add_bnn_clause(lits, cutoff, out);
+}
+#endif
+
 Hash Counter::add_hash(uint32_t hash_index, SparseData& sparse_data)
 {
     string random_bits;
@@ -200,7 +211,7 @@ void Counter::dump_cnf_from_solver(const vector<Lit>& assumps, const uint32_t it
 
     std::ofstream f;
     f.open(ss.str(), std::ios::out);
-    f << "p cnf " << solver->nVars()+1 << " " << cls_in_solver.size()+xors_in_solver.size()+assumps.size() << endl;
+    f << "p cnf " << solver->nVars()+1 << " " << cls_in_solver.size()+xors_in_solver.size()+bnns_in_solver.size()+assumps.size() << endl;
     for(const auto& cl: cls_in_solver) f << cl << " 0" << endl;
     f << "c XORs below" << endl;
     for(const auto& x: xors_in_solver) {
@@ -212,6 +223,14 @@ void Counter::dump_cnf_from_solver(const vector<Lit>& assumps, const uint32_t it
             f << l << " ";
         }
         f << "0" << endl;
+    }
+    f << "c BNNs below" << endl;
+    for(const auto& bnn: bnns_in_solver) {
+        f << "b ";
+        for(uint32_t i = 0; i < bnn.first.size(); i++) {
+            f << bnn.first[i] << " ";
+        }
+        f << "0 " << bnn.second.first << " " << bnn.second.second << " 0" << endl;
     }
     f << "c assumptions below" << endl;
     for(const auto& l: assumps) f << l << " 0" << endl;
@@ -903,6 +922,7 @@ void Counter::check_model(
             }
             assert(sat);
         }
+        // todo: add check bnn
     }
 
     if (!hm) return;

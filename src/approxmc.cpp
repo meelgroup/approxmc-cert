@@ -296,6 +296,16 @@ DLL_PUBLIC bool AppMC::add_xor_clause(const vector<uint32_t>& vars, bool rhs)
     return data->counter.solver_add_xor_clause(vars, rhs);
 }
 
+#ifdef ENABLE_BNN 
+DLL_PUBLIC bool AppMC::add_bnn_clause(
+            const std::vector<Lit>& lits,
+            signed cutoff,
+            Lit out )
+{
+    return data->counter.solver_add_bnn_clause(lits, cutoff, out);
+}
+#endif
+
 DLL_PUBLIC CMSat::SATSolver* AppMC::get_solver()
 {
     return data->counter.solver;

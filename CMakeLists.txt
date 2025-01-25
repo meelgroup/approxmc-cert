@@ -43,6 +43,10 @@ if(POLICY CMP0026)
     cmake_policy(SET CMP0026 NEW)
 endif()
 
+if (ENABLE_BNN)
+    add_definitions( -DENABLE_BNN )
+endif()
+
 # -----------------------------------------------------------------------------
 # Provide scripts dir for included cmakes to use
 # -----------------------------------------------------------------------------

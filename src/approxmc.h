@@ -89,6 +89,13 @@ public:
     bool add_red_clause(const std::vector<CMSat::Lit>& lits);
     bool add_xor_clause(const std::vector<CMSat::Lit>& lits, bool rhs);
     bool add_xor_clause(const std::vector<uint32_t>& vars, bool rhs);
+    #ifdef ENABLE_BNN 
+    bool add_bnn_clause(
+        const std::vector<CMSat::Lit>& lits,
+        signed cutoff,
+        CMSat::Lit out = CMSat::lit_Undef
+    );
+    #endif
 
     // Information about approxmc
     std::string get_version_info();
