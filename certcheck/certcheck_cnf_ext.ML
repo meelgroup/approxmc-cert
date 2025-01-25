@@ -41,6 +41,7 @@ fun eq A_ a b = equal A_ a b;
 end; (*struct HOL*)
 
 structure Product_Type : sig
+  val equal_boola : bool -> bool -> bool
   val equal_bool : bool HOL.equal
   val apsnd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
   val map_prod : ('a -> 'b) -> ('c -> 'd) -> 'a * 'c -> 'b * 'd
@@ -171,7 +172,6 @@ structure Arith : sig
   val modulo_nata : nat -> nat -> nat
   val less_eq_nat : nat -> nat -> bool
   val less_nat : nat -> nat -> bool
-  val ord_nat : nat Orderings.ord
   type 'a ab_semigroup_add
   type 'a monoid_add
   val semigroup_add_monoid_add : 'a monoid_add -> 'a semigroup_add
@@ -1820,11 +1820,8 @@ structure List : sig
   val nth : 'a list -> Arith.nat -> 'a
   val upt : Arith.nat -> Arith.nat -> Arith.nat list
   val zip : 'a list -> 'b list -> ('a * 'b) list
-  val drop : Arith.nat -> 'a list -> 'a list
   val find : ('a -> bool) -> 'a list -> 'a option
   val fold : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
-  val maps : ('a -> 'b list) -> 'a list -> 'b list
-  val take : Arith.nat -> 'a list -> 'a list
   val foldr : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
   val list_ex : ('a -> bool) -> 'a list -> bool
   val distinct : 'a HOL.equal -> 'a list -> bool
@@ -1853,24 +1850,11 @@ fun zip (x :: xs) (y :: ys) = (x, y) :: zip xs ys
   | zip xs [] = []
   | zip [] ys = [];
 
-fun drop n [] = []
-  | drop n (x :: xs) =
-    (if Arith.equal_nata n Arith.zero_nata then x :: xs
-      else drop (Arith.minus_nata n Arith.one_nata) xs);
-
 fun find uu [] = NONE
   | find p (x :: xs) = (if p x then SOME x else find p xs);
 
 fun fold f (x :: xs) s = fold f xs (f x s)
   | fold f [] s = s;
-
-fun maps f [] = []
-  | maps f (x :: xs) = f x @ maps f xs;
-
-fun take n [] = []
-  | take n (x :: xs) =
-    (if Arith.equal_nata n Arith.zero_nata then []
-      else x :: take (Arith.minus_nata n Arith.one_nata) xs);
 
 fun foldr f [] = Fun.id
   | foldr f (x :: xs) = f x o foldr f xs;
@@ -2734,13 +2718,16 @@ fun raw_median_bound alpha t =
 
 end; (*struct ApproxMCAnalysis*)
 
-structure CertCheck_CNF_XOR : sig
+structure CertCheck_CNF_EXT : sig
   datatype lit = Pos of Arith.nat | Neg of Arith.nat
   val find_t : Real.real -> Arith.nat
   val real_div : Real.real -> Real.real -> Real.real
   val certcheck :
-    ((lit list) list * (lit list) list -> bool) ->
-      (lit list) list * (lit list) list ->
+    ((lit list) list *
+       ((lit list) list * (lit list * (Arith.nat * lit)) list) ->
+      bool) ->
+      (lit list) list *
+        ((lit list) list * (lit list * (Arith.nat * lit)) list) ->
         Arith.nat list ->
           Real.real ->
             Real.real ->
@@ -2754,18 +2741,6 @@ structure CertCheck_CNF_XOR : sig
   val real_plus : Real.real -> Real.real -> Real.real
   val real_minus : Real.real -> Real.real -> Real.real
   val real_of_int : IntInf.int -> Real.real
-  val certcheck_blast :
-    ((lit list) list -> bool) ->
-      (lit list) list * (lit list) list ->
-        Arith.nat list ->
-          Real.real ->
-            Real.real ->
-              (Arith.nat -> bool) list *
-                (Arith.nat ->
-                  Arith.nat *
-                    ((Arith.nat -> bool) list * (Arith.nat -> bool) list)) ->
-                (Arith.nat -> Arith.nat -> bool list * bool) ->
-                  (string, Arith.nat) Sum_Type.sum
 end = struct
 
 datatype lit = Pos of Arith.nat | Neg of Arith.nat;
@@ -2778,9 +2753,15 @@ fun sat_cmsxor w c =
         (Groups_List.sum_list Arith.monoid_add_nat
           (List.map (Arith.of_bool Arith.zero_neq_one_nat o sat_lit w) c)));
 
-fun check_sol fml w =
-  List.list_all (List.list_ex (sat_lit w)) (Product_Type.fst fml) andalso
-    List.list_all (sat_cmsxor w) (Product_Type.snd fml);
+fun sat_cmsbnn w (c, (k, y)) =
+  Product_Type.equal_boola (sat_lit w y)
+    (Arith.less_eq_nat k
+      (Groups_List.sum_list Arith.monoid_add_nat
+        (List.map (Arith.of_bool Arith.zero_neq_one_nat o sat_lit w) c)));
+
+fun check_sol (fc, (fx, fb)) w =
+  List.list_all (List.list_ex (sat_lit w)) fc andalso
+    (List.list_all (sat_cmsxor w) fx andalso List.list_all (sat_cmsbnn w) fb);
 
 fun ban_sol vs fml =
   (List.map (fn a => (case a of (v, true) => Neg v | (v, false) => Pos v)) vs ::
@@ -2810,7 +2791,7 @@ fun bsat check_unsat f s thresh xs =
     of Sum_Type.Inl a => Sum_Type.Inl a
     | Sum_Type.Inr _ => Sum_Type.Inr (List.size_list xs));
 
-fun fix_t _ = raise Fail "CertCheck_CNF_XOR.fix_t";
+fun fix_t _ = raise Fail "CertCheck_CNF_EXT.fix_t";
 
 fun find_t delta =
   (case List.find
@@ -2829,39 +2810,12 @@ fun find_t delta =
           (List.upt Arith.zero_nata (Arith.nat_of_integer (256 : IntInf.int)))
     of NONE => fix_t delta | SOME m => m);
 
-fun enc_xor (x, b) (fc, fx) =
-  (if b then (fc, List.map Pos x :: fx)
-    else (case x of [] => (fc, fx)
-           | v :: vs => (fc, (Neg v :: List.map Pos vs) :: fx)));
-
-fun var_lit l = (case l of Pos x => x | Neg x => x);
-
-fun var_lits ls =
-  List.fold (Orderings.max Arith.ord_nat o var_lit) ls Arith.zero_nata;
-
-fun var_fml f =
-  Orderings.max Arith.ord_nat
-    (List.fold (Orderings.max Arith.ord_nat o var_lits) (Product_Type.fst f)
-      Arith.zero_nata)
-    (List.fold (Orderings.max Arith.ord_nat o var_lits) (Product_Type.snd f)
-      Arith.zero_nata);
+fun enc_xor (x, b) (fc, (fx, fb)) =
+  (if b then (fc, (List.map Pos x :: fx, fb))
+    else (case x of [] => (fc, (fx, fb))
+           | v :: vs => (fc, ((Neg v :: List.map Pos vs) :: fx, fb))));
 
 fun real_div n m = Real.divide_reala n m;
-
-fun negate_lit l = (case l of Pos a => Neg a | Neg a => Pos a);
-
-fun xor_clauses [] b = (if b then [[]] else [])
-  | xor_clauses (x :: xs) b =
-    let
-      val p_x = xor_clauses xs b;
-      val n_x = xor_clauses xs (not b);
-    in
-      List.map (fn a => x :: a) p_x @ List.map (fn a => negate_lit x :: a) n_x
-    end;
-
-fun blast_xors xors = List.maps (fn x => xor_clauses x true) xors;
-
-fun blast_fml f = Product_Type.fst f @ blast_xors (Product_Type.snd f);
 
 fun size_xorL_cert check_unsat f s thresh xorsl i xs =
   let
@@ -2950,37 +2904,8 @@ fun real_mult n m = Real.times_reala n m;
 
 fun real_plus n m = Real.plus_reala n m;
 
-fun split_xor k xs (acc, u) =
-  (if Arith.less_eq_nat (List.size_list xs)
-        (Arith.plus_nata k (Arith.nat_of_integer (3 : IntInf.int)))
-    then (xs :: acc, u)
-    else let
-           val xs1 =
-             List.take
-               (Arith.plus_nata k (Arith.nat_of_integer (2 : IntInf.int))) xs;
-           val xs2 =
-             List.drop
-               (Arith.plus_nata k (Arith.nat_of_integer (2 : IntInf.int))) xs;
-         in
-           split_xor k (Neg u :: xs2)
-             ((Pos u :: xs1) :: acc, Arith.plus_nata u Arith.one_nata)
-         end);
-
-fun split_xors k u xs = Product_Type.fst (List.fold (split_xor k) xs ([], u));
-
-fun split_fml k f = let
-                      val u = Arith.plus_nata (var_fml f) Arith.one_nata;
-                    in
-                      (Product_Type.fst f, split_xors k u (Product_Type.snd f))
-                    end;
-
 fun real_minus n m = Real.minus_reala n m;
 
 fun real_of_int n = Arith.of_nat Real.semiring_1_real (Arith.nat_of_integer n);
 
-fun blast_split_fml f = blast_fml (split_fml Arith.one_nata f);
-
-fun certcheck_blast check_unsat f s epsilon delta m0ms =
-  certcheck (check_unsat o blast_split_fml) f s epsilon delta m0ms;
-
-end; (*struct CertCheck_CNF_XOR*)
+end; (*struct CertCheck_CNF_EXT*)

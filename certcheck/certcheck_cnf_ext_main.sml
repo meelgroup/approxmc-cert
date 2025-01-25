@@ -1,34 +1,42 @@
 (* REQUIREMENT: Implement printer for the theory
-  The following is a printer for CNF-XOR which will be
+  The following is a printer for CNF-EXT which will be
   used to call the external UNSAT checker *)
-fun lit_to_string (Pos n) = Int.toString (Arith.integer_of_nat n)
-| lit_to_string (Neg n) = "-"^Int.toString (Arith.integer_of_nat n);
-
 fun clause_to_string cs =
   String.concatWith " " (map lit_to_string cs @ ["0"]);
 
 fun xor_to_string cs =
   "x "^clause_to_string cs;
 
+fun mk_tail (k,y) =
+  " " ^ Int.toString (Arith.integer_of_nat k) ^ " " ^ lit_to_string y ^" 0";
+
+fun bnn_to_string (cs,tail) =
+  "b "^clause_to_string cs ^ mk_tail tail;
+
 fun lit_var (Pos n) = Arith.integer_of_nat n
 | lit_var (Neg n) = Arith.integer_of_nat n;
 
 fun max_var_clause cs = max_list 0 (map lit_var cs);
 
-fun max_var_fml (cs,xs) =
-  max
-  (max_list 0 (map max_var_clause cs))
-  (max_list 0 (map max_var_clause xs));
+fun max_var_bnn (cs,(k,y)) = max_var_clause (y :: cs);
+
+fun max_var_fml ((cs,(xs,bs)):fml) =
+  max_list 0
+  [
+    max_list 0 (map max_var_clause cs),
+    max_list 0 (map max_var_clause xs),
+    max_list 0 (map max_var_bnn bs)
+  ];
 
 fun header_string v c =
   "p cnf "^Int.toString v^" "^Int.toString c;
 
-fun fml_to_string (cs,xs) =
+fun fml_to_string (cs,(xs,bs)) =
   let
-    val h = header_string (max_var_fml (cs,xs)) (length cs + length xs)
+    val h = header_string (max_var_fml (cs,(xs,bs))) (length cs + length xs + length bs)
   in
     String.concatWith "\n"
-      (h::map clause_to_string cs @ map xor_to_string xs)
+      (h::map clause_to_string cs @ map xor_to_string xs @ map bnn_to_string bs)
   end;
 
 (* Get the nth XOR from the byte array *)
@@ -197,7 +205,7 @@ fun check_unsat fname cmd_path F =
     val name = fname ^"_"^ !temp_path_suffix
     val u = print_fmt_file fml_to_string F name
     val args = [name]
-    val _ = println ("c dumping CNF-XOR to file: "^ name)
+    val _ = println ("c dumping CNF-EXT to file: "^ name)
     val _ = println ("c and calling UNSAT checker: "^ cmd_path)
     val proc : (TextIO.instream, TextIO.outstream) Unix.proc =
       Unix.execute (cmd_path, args);
@@ -227,27 +235,19 @@ val order_int = {preorder_order = preorder_int} : int Orderings.order;
 
 val linorder_int = {order_linorder = order_int} : int Orderings.linorder;
 
-fun approxmc F S eps del cert xors fname cuname blast =
-  if blast then
-    certcheck_blast (fn f => (check_unsat fname cuname (f,[])))
-      F S eps del cert xors
-  else
+fun approxmc F S eps del cert xors fname cuname =
     certcheck (check_unsat fname cuname)
       F S eps del cert xors;
 
-val usage = "usage: certcheck_cnf_xor eps del foo.xnf rand_file cert_file check_unsat_path [optional: blast (blast to CNF)]";
-
-fun parse_blast [s] = (s = "blast")
-| parse_blast _ = false;
+val usage = "usage: certcheck_cnf_xor eps del foo.xnf rand_file cert_file check_unsat_path";
 
 fun parse_args (streps::strdel::fname::rname::mname::cuname::rest) =
   (let
     val eps = real_from_string streps
     val del = real_from_string strdel
     val (F,S) = (parse_fmlp_file fname)
-    val t = CertCheck_CNF_XOR.find_t del;
+    val t = CertCheck_CNF_EXT.find_t del;
     val lS = List.size_list S;
-    val blast = parse_blast rest;
     val _ = println
       ("c using eps: " ^ rat_real_to_string eps)
     val _ = println
@@ -266,13 +266,12 @@ fun parse_args (streps::strdel::fname::rname::mname::cuname::rest) =
     val rand = BinIO.inputAll (BinIO.openIn rname);
     val _ = println ("c read rand bits: "^Int.toString (Word8Vector.length rand * 8))
     val _ = println ("c using UNSAT checker: "^ cuname)
-    val _ = println ("c blast to CNF: " ^ (if blast then "true" else "false"))
     val xors = gen_rand_xors t lS rand
     (* val _ = print_rand_xors S t lS xors *)
 
     val cert = parse_ms_file mname
 
-    val cnte = approxmc F S eps del cert xors fname cuname blast
+    val cnte = approxmc F S eps del cert xors fname cuname
   in
     case cnte of
       Sum_Type.Inl err => println ("c CERT ERROR: " ^ err)
@@ -281,7 +280,7 @@ fun parse_args (streps::strdel::fname::rname::mname::cuname::rest) =
       (Int.toString o Arith.integer_of_nat) cnt)
   end handle Fail s => println ("c ERROR: "^s))
 | parse_args _ =
-  println"usage: certcheck_cnf_xor eps del foo.xnf rand_file cert_file check_unsat_path [optional: blast=T/F]"
+  println"usage: certcheck_cnf_xor eps del foo.xnf rand_file cert_file check_unsat_path"
 
 val args = CommandLine.arguments ();
 val u = parse_args args;

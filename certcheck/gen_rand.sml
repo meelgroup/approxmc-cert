@@ -52,7 +52,7 @@ fun parse_args [streps,strdel,fname,rname] =
     val del = real_from_string strdel
     val (F,S) = (parse_fmlp_file fname)
     val u = (gen := Random.newgen())
-    val t = CertCheck_CNF_XOR.find_t del;
+    val t = CertCheck_CNF_EXT.find_t del;
     val lS = List.size_list S;
 
     val _ = println

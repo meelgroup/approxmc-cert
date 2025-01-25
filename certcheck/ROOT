@@ -1,0 +1,4 @@
+session Approximate_Model_Counting_BNN = Approximate_Model_Counting +
+  options [timeout = 600]
+  theories
+    CertCheck_CNF_EXT

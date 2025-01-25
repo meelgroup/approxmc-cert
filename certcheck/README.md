@@ -2,15 +2,15 @@
 
 This folder contains the sources for CertCheck specialized for CNF-XOR approximate model counting.
 
-The main file `certcheck_cnf_xor.ML` was exported from `Isabelle2024` from the corresponding AFP entry.
+The main file `certcheck_cnf_ext.ML` was exported from `Isabelle2024` from the corresponding AFP entry.
 
 # Build Instructions
 
-To build `certcheck_cnf_xor`, ensure that you have a working copy of the [MLton compiler](http://mlton.org/), then run `make` in this directory.
+To build `certcheck_cnf_ext`, ensure that you have a working copy of the [MLton compiler](http://mlton.org/), then run `make` in this directory.
 
 ## Additional Dependencies
 
-The tool requires access to a (verified) CNF-XOR unsatisfiability checking pipeline. A default pipeline script `check_unsat_cms.sh` is provided which assumes access to `cryptominisat`, `frat-xor`, and `cake_xlrup` placed in the `cert_tools` subfolder. These tools can be built and copied from the [CryptoMiniSat repository](https://github.com/msoos/cryptominisat) and the [frat-xor repository](https://github.com/meelgroup/frat-xor), respectively.
+The tool requires access to a (verified) CNF-XOR unsatisfiability checking pipeline. A default pipeline script `check_unsat_cms.sh` is provided which assumes access to `cryptominisat5`, `frat-xor`, and `cake_xlrup` placed in the `cert_tools` subfolder. These tools can be built and copied from the [CryptoMiniSat repository](https://github.com/msoos/cryptominisat) and the [frat-xor repository](https://github.com/meelgroup/frat-xor), respectively.
 
 # Usage Instructions
 
@@ -32,10 +32,10 @@ Next, use `approxmc` (from this forked repository) with certification enabled to
 approxmc --arjun 0 --randbits example.rand --cert example.cert ../example.cnf
 ```
 
-Finally, run `certcheck_cnf_xor` on the certificate with access to the unsatisfiability checker.
+Finally, run `certcheck_cnf_ext` on the certificate with access to the unsatisfiability checker.
 
 ```
-certcheck_cnf_xor 8//10 2//10 ../example.cnf example.rand example.cert check_unsat_cms.sh
+certcheck_cnf_ext 8//10 2//10 ../example.cnf example.rand example.cert check_unsat_cms.sh
 ```
 
 This should produce output similar to the following:
@@ -61,7 +61,7 @@ s mc 184
 
 # Partial Certificate Format
 
-The partial certificate format expected by `certcheck_cnf_xor` is as follows.
+The partial certificate format expected by `certcheck_cnf_ext` is as follows.
 Note that we call it a "partial" certificate because the unsatisfiability proofs are not included, but are rather checked by an external (verified) pipeline.
 
 ## First round
