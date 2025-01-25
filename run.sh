@@ -13,4 +13,4 @@ CNF=$1
 ./cert_tools/approxmc --arjun 0 --randbits rand --cert cert $CNF
 
 # Run the certificate checker
-./cert_tools/certcheck_cnf_xor 8//10 2//10 $CNF rand cert check_unsat_cms.sh
+./cert_tools/certcheck_cnf_ext 8//10 2//10 $CNF rand cert check_unsat_cms.sh
