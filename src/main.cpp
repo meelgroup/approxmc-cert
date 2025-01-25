@@ -267,20 +267,6 @@ void print_num_solutions(uint32_t cell_sol_cnt, uint32_t hash_count, const mpz_c
     cout << "s mc " << num_sols << endl;
 }
 
-void get_cnf_from_arjun() {
-    const uint32_t orig_num_vars = arjun->get_orig_num_vars();
-    appmc->new_vars(orig_num_vars);
-    arjun->start_getting_constraints();
-    vector<Lit> clause;
-    bool is_xor, rhs;
-    while (arjun->get_next_constraint(clause, is_xor, rhs)) {
-        assert(!is_xor); assert(rhs);
-        bool ok = true;
-        for(auto l: clause) if (l.var() >= orig_num_vars) { ok = false; break; }
-        if (ok) appmc->add_clause(clause);
-    }
-    arjun->end_getting_constraints();
-}
 
 template<class T> void read_input_cnf(T* reader) {
     try {
@@ -359,18 +345,6 @@ void print_orig_sampling_vars(const vector<uint32_t>& orig_sampling_vars, T* ptr
     }
 }
 
-void transfer_unit_clauses_from_arjun()
-{
-    vector<Lit> cl(1);
-    auto units = arjun->get_zero_assigned_lits();
-    for(const auto& unit: units) {
-        if (unit.var() < appmc->nVars()) {
-            cl[0] = unit;
-            appmc->add_clause(cl);
-        }
-    }
-}
-
 int main(int argc, char** argv)
 {
     #if defined(__GNUC__) && defined(__linux__)
@@ -394,47 +368,8 @@ int main(int argc, char** argv)
     set_approxmc_options();
 
     if (do_arjun) {
-        //Arjun-based minimization
-        arjun = new ArjunNS::Arjun;
-        arjun->set_seed(seed);
-        arjun->set_verbosity(verb);
-        arjun->set_simp(simplify);
-        if (verb) cout << "c Arjun SHA revision " <<  arjun->get_version_info() << endl;
-
-        read_input_cnf(arjun);
-        print_orig_sampling_vars(arjun->get_orig_sampl_vars(), arjun);
-        auto debug_sampling_vars = arjun->get_orig_sampl_vars();
-        auto sampl_vars = arjun->run_backwards();
-        print_final_indep_set(sampl_vars, arjun->get_orig_sampl_vars().size(),
-                arjun->get_empty_sampl_vars());
-        if (with_e) {
-            ArjunNS::SimpConf sc;
-            sc.appmc = true;
-            sc.oracle_vivify = e_vivif;
-            sc.oracle_vivify_get_learnts = true;
-            sc.oracle_sparsify = e_sparsify;
-            sc.iter1 = e_iter_1;
-            sc.iter2 = e_iter_2;
-            const auto ret = arjun->get_fully_simplified_renumbered_cnf(sc);
-            appmc->new_vars(ret.nvars);
-            for(const auto& cl: ret.cnf) appmc->add_clause(cl);
-            if (e_get_reds) for(const auto& cl: ret.red_cnf) appmc->add_red_clause(cl);
-            sampl_vars = ret.sampl_vars;
-            appmc->set_multiplier_weight(ret.multiplier_weight);
-        } else {
-            get_cnf_from_arjun();
-            transfer_unit_clauses_from_arjun();
-            mpz_class dummy(2);
-            mpz_pow_ui(dummy.get_mpz_t(), dummy.get_mpz_t(), arjun->get_empty_sampl_vars().size());
-            appmc->set_multiplier_weight(arjun->get_multiplier_weight()*dummy);
-        }
-        if (debug_arjun) {
-            assert(!with_e && "Can't use debug and --withe at the same time");
-            sampl_vars = debug_sampling_vars;
-            appmc->set_multiplier_weight(1);
-        }
-        appmc->set_sampl_vars(sampl_vars);
-        delete arjun;
+        cout << "Error: Arjun is not supported." << endl;
+        return 0;
     } else {
         read_input_cnf(appmc);
         print_final_indep_set(appmc->get_sampl_vars() , 0, vector<uint32_t>());
