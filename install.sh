@@ -88,8 +88,8 @@ cd ../..
 cd certcheck
 make
 cp gen_rand ../cert_tools/gen_rand
-cp certcheck_cnf_xor ../cert_tools/certcheck_cnf_xor
+cp certcheck_cnf_ext ../cert_tools/certcheck_cnf_ext
 cd ..
 
 # After this script, cert_tools contains:
-# approxmc, cake_xlrup, cryptominisat5, certcheck_cnf_xor, frat-xor, and gen_rand.
+# approxmc, cake_xlrup, cryptominisat5, certcheck_cnf_ext, frat-xor, and gen_rand.
