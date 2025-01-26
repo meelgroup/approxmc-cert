@@ -17,7 +17,7 @@ set +e
 echo "c calling cryptominisat5" >&2
 
 # Generate FRAT-XOR proof
-./cert_tools/cryptominisat5 --verbstat 0 $CNF $tempxfrat > /dev/null
+./cert_tools/cryptominisat5 --verbstat 0 --distill 0 --distillbin 0 --scc 0 $CNF $tempxfrat > /dev/null
 
 if [ $? -ne 20 ];
 then
