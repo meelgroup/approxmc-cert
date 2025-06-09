@@ -7,8 +7,11 @@ fun clause_to_string cs =
 fun xor_to_string cs =
   "x "^clause_to_string cs;
 
-fun mk_tail (k,y) =
-  " " ^ Int.toString (Arith.integer_of_nat k) ^ " " ^ lit_to_string y ^" 0";
+fun opt_lit_to_string oy =
+  case oy of NONE => "" | SOME y => lit_to_string y;
+
+fun mk_tail (k,oy) =
+  " " ^ Int.toString (Arith.integer_of_nat k) ^ " " ^ opt_lit_to_string oy ^" 0";
 
 fun bnn_to_string (cs,tail) =
   "b "^clause_to_string cs ^ mk_tail tail;
@@ -18,7 +21,9 @@ fun lit_var (Pos n) = Arith.integer_of_nat n
 
 fun max_var_clause cs = max_list 0 (map lit_var cs);
 
-fun max_var_bnn (cs,(k,y)) = max_var_clause (y :: cs);
+fun max_var_opt oy = case oy of NONE => 0 | SOME y => lit_var y;
+
+fun max_var_bnn (cs,(k,oy)) = max_list (max_var_opt oy) (map lit_var cs);
 
 fun max_var_fml ((cs,(xs,bs)):fml) =
   max_list 0

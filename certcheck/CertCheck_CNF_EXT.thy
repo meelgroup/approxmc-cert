@@ -26,7 +26,7 @@ text \<open>
 datatype lit = Pos nat | Neg nat
 type_synonym clause = "lit list"
 type_synonym cmsxor = "lit list"
-type_synonym cmsbnn = "lit list \<times> nat \<times> lit"
+type_synonym cmsbnn = "lit list \<times> nat \<times> lit option"
 
 type_synonym fml = "clause list \<times> cmsxor list \<times> cmsbnn list"
 
@@ -42,8 +42,8 @@ definition sat_cmsxor :: "assignment \<Rightarrow> cmsxor \<Rightarrow> bool" wh
   "sat_cmsxor w C = odd ((sum_list (map (of_bool \<circ> (sat_lit w)) C))::nat)"
 
 fun sat_cmsbnn :: "assignment \<Rightarrow> cmsbnn \<Rightarrow> bool" where
-  "sat_cmsbnn w (C,k,y) = (
-     sat_lit w y \<longleftrightarrow> ((sum_list (map (of_bool \<circ> (sat_lit w)) C)::nat) \<ge> k))"
+  "sat_cmsbnn w (C,k,oy) = (
+     pred_option (sat_lit w) oy \<longleftrightarrow> ((sum_list (map (of_bool \<circ> (sat_lit w)) C)::nat) \<ge> k))"
 
 fun sat_fml :: "assignment \<Rightarrow> fml \<Rightarrow> bool"
   where
@@ -113,7 +113,7 @@ lemma sols_ban_sol:
   apply (cases F) by (auto simp add: ban_sat_clause)
 
 (* Globally interpret the ApproxMC locale to make
-    ApproxMC certification available for CNF-XOR *)
+    ApproxMC certification available for CNF-EXT *)
 global_interpretation CertCheck_CNF_EXT :
   CertCheck "sols" "enc_xor" "check_sol" "ban_sol"
   defines
@@ -157,6 +157,13 @@ definition real_minus :: "real \<Rightarrow> real \<Rightarrow> real"
 
 declare [[code abort: fix_t]]
 
+lemma pred_option_code[code]:
+  shows
+  "pred_option P opt =
+  (case opt of None \<Rightarrow> True
+  | Some y \<Rightarrow> P y)"
+  by (cases opt; auto)
+
 (* Sample code export.
   Helper Isabelle converters, followed by exporting the actual code *)
 export_code
@@ -169,6 +176,7 @@ export_code
   Pos Neg
   CertCheck_CNF_EXT.appmc.compute_thresh
   find_t certcheck
-  in SML
+  in SML          
+  file certcheck_cnf_ext.ML
 
 end

@@ -1,17 +1,22 @@
-structure Str_Literal =
-struct
+structure Str_Literal : sig
+  type int = IntInf.int
+  val literal_of_asciis : int list -> string
+  val asciis_of_literal : string -> int list
+end = struct
+
+open IntInf;
 
 fun map f [] = []
-  | map f (x :: xs) = f x :: map f xs; (* deliberate clone not relying on List._ module *)
+  | map f (x :: xs) = f x :: map f xs; (* deliberate clone not relying on List._ structure *)
 
-fun check_ascii (k : IntInf.int) =
+fun check_ascii k =
   if 0 <= k andalso k < 128
   then k
   else raise Fail "Non-ASCII character in literal";
 
-val char_of_ascii = Char.chr o IntInf.toInt o check_ascii;
+val char_of_ascii = Char.chr o toInt o (fn k => k mod 128);
 
-val ascii_of_char = check_ascii o IntInf.fromInt o Char.ord;
+val ascii_of_char = check_ascii o fromInt o Char.ord;
 
 val literal_of_asciis = String.implode o map char_of_ascii;
 
@@ -315,6 +320,7 @@ structure Arith : sig
     'a linordered_field -> 'a Orderings.unbounded_dense_linorder
   val linordered_idom_linordered_field :
     'a linordered_field -> 'a linordered_idom
+  val nat_of_integer : IntInf.int -> nat
   val nat : int -> nat
   val suc : nat -> nat
   val dvd : 'a HOL.equal * 'a semidom_modulo -> 'a -> 'a -> bool
@@ -325,7 +331,6 @@ structure Arith : sig
   val abs_int : int -> int
   val one_int : int
   val sgn_int : int -> int
-  val nat_of_integer : IntInf.int -> nat
   val plus_int : int -> int -> int
   val of_nat : 'a semiring_1 -> nat -> 'a
   val bit_cut_integer : IntInf.int -> IntInf.int * bool
@@ -1525,7 +1530,9 @@ val unbounded_dense_linorder_linordered_field =
 val linordered_idom_linordered_field = #linordered_idom_linordered_field :
   'a linordered_field -> 'a linordered_idom;
 
-fun nat k = Nat (Orderings.max ord_integer (0 : IntInf.int) (integer_of_int k));
+fun nat_of_integer k = Nat (Orderings.max ord_integer (0 : IntInf.int) k);
+
+fun nat x = (nat_of_integer o integer_of_int) x;
 
 fun suc n = plus_nata n one_nata;
 
@@ -1577,8 +1584,6 @@ fun numeral A_ (Bit1 n) =
       plus ((plus_semigroup_add o semigroup_add_numeral) A_) m m
     end
   | numeral A_ One = one (one_numeral A_);
-
-fun nat_of_integer k = Nat (Orderings.max ord_integer (0 : IntInf.int) k);
 
 fun divmod_nat m n =
   let
@@ -1814,6 +1819,14 @@ fun part B_ f pivot (x :: xs) =
   | part B_ f pivot [] = ([], ([], []));
 
 end; (*struct Multiset*)
+
+structure Option : sig
+  val pred_option : ('a -> bool) -> 'a option -> bool
+end = struct
+
+fun pred_option p opt = (case opt of NONE => true | SOME a => p a);
+
+end; (*struct Option*)
 
 structure List : sig
   val equal_list : 'a HOL.equal -> ('a list) HOL.equal
@@ -2724,10 +2737,10 @@ structure CertCheck_CNF_EXT : sig
   val real_div : Real.real -> Real.real -> Real.real
   val certcheck :
     ((lit list) list *
-       ((lit list) list * (lit list * (Arith.nat * lit)) list) ->
+       ((lit list) list * (lit list * (Arith.nat * lit option)) list) ->
       bool) ->
       (lit list) list *
-        ((lit list) list * (lit list * (Arith.nat * lit)) list) ->
+        ((lit list) list * (lit list * (Arith.nat * lit option)) list) ->
         Arith.nat list ->
           Real.real ->
             Real.real ->
@@ -2753,8 +2766,8 @@ fun sat_cmsxor w c =
         (Groups_List.sum_list Arith.monoid_add_nat
           (List.map (Arith.of_bool Arith.zero_neq_one_nat o sat_lit w) c)));
 
-fun sat_cmsbnn w (c, (k, y)) =
-  Product_Type.equal_boola (sat_lit w y)
+fun sat_cmsbnn w (c, (k, oy)) =
+  Product_Type.equal_boola (Option.pred_option (sat_lit w) oy)
     (Arith.less_eq_nat k
       (Groups_List.sum_list Arith.monoid_add_nat
         (List.map (Arith.of_bool Arith.zero_neq_one_nat o sat_lit w) c)));

@@ -1,16 +1,22 @@
-# CertCheck (CNF-XOR)
+# CertCheck
 
-This folder contains the sources for CertCheck specialized for CNF-XOR approximate model counting.
-
-The main file `certcheck_cnf_ext.ML` was exported from `Isabelle2024` from the corresponding AFP entry.
+This folder contains the sources for CertCheck specialized for approximate model counting over CNFs with XOR and BNN constraints. Further theory extensions are possible.
 
 # Build Instructions
 
 To build `certcheck_cnf_ext`, ensure that you have a working copy of the [MLton compiler](http://mlton.org/), then run `make` in this directory.
 
+# Building from Isabelle
+
+The file `certcheck_cnf_ext.ML` is exported from Isabelle2025 from `CertCheck_CNF_EXT.thy`.
+
 ## Additional Dependencies
 
-The tool requires access to a (verified) CNF-XOR unsatisfiability checking pipeline. A default pipeline script `check_unsat_cms.sh` is provided which assumes access to `cryptominisat5`, `frat-xor`, and `cake_xlrup` placed in the `cert_tools` subfolder. These tools can be built and copied from the [CryptoMiniSat repository](https://github.com/msoos/cryptominisat) and the [frat-xor repository](https://github.com/meelgroup/frat-xor), respectively.
+The tool requires access to a (verified) extended CNF unsatisfiability checking pipeline.
+
+A default pipeline script `check_unsat_cms.sh` is provided which assumes access to `cryptominisat5`, `frat-xor`, and `cake_xlrup` placed in the `cert_tools` subfolder.
+
+These tools can be built and copied from the [CryptoMiniSat repository](https://github.com/msoos/cryptominisat) and the [frat-xor repository](https://github.com/meelgroup/frat-xor), respectively.
 
 # Usage Instructions
 

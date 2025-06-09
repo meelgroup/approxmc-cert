@@ -7,7 +7,7 @@ val bad_dimacs = false;
   The following is a parser for CNF-XOR-BNN *)
 
 (* Types in concrete DIMACS *)
-type fml = lit list list * (lit list list * (lit list * (Arith.nat * lit)) list);
+type fml = lit list list * (lit list list * (lit list * (Arith.nat * lit option)) list);
 type proj = Arith.nat list;
 
 (* header line *)
@@ -75,12 +75,21 @@ fun parse_tail v [kstr,ystr,"0"] =
     if k <= 0 then
       raise Fail ("Invalid cutoff: " ^ kstr)
     else if Arith.integer_of_nat (var_lit y) <= v then
-      (kn, y)
+      (kn, SOME y)
     else
       raise Fail ("Invalid RHS literal: " ^ ystr)
   end
+| parse_tail v [kstr,"0"] =
+  let
+    val k = fromStringE kstr
+    val kn = Arith.nat_of_integer k
+  in
+    if k <= 0 then
+      raise Fail ("Invalid cutoff: " ^ kstr)
+    else (kn, NONE)
+  end
 | parse_tail _ _ =
-      raise Fail ("Unable to parse end of BNN line");
+    raise Fail ("Unable to parse end of BNN line");
 
 fun parse_bnn v ss =
   case parse_lits_aux ss [] of
