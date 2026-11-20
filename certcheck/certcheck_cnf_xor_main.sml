@@ -277,7 +277,7 @@ fun parse_args (streps::strdel::fname::rname::mname::cuname::rest) =
     case cnte of
       Sum_Type.Inl err => println ("c CERT ERROR: " ^ err)
     | Sum_Type.Inr cnt =>
-    println ("s mc "^
+    println ("s VERIFIED mc "^
       (Int.toString o Arith.integer_of_nat) cnt)
   end handle Fail s => println ("c ERROR: "^s))
 | parse_args _ =
